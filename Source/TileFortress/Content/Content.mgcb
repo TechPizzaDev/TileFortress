@@ -1,0 +1,34 @@
+
+#----------------------------- Global Properties ----------------------------#
+
+/outputDir:bin/$(Platform)
+/intermediateDir:obj/$(Platform)
+/platform:DesktopGL
+/config:
+/profile:Reach
+/compress:False
+
+#-------------------------------- References --------------------------------#
+
+/reference:..\..\..\ThirdParty\Binaries\MonoGame.Extended\MonoGame.Extended.Content.Pipeline.dll
+/reference:..\..\..\ThirdParty\Binaries\MonoGame.Extended\MonoGame.Extended.dll
+
+#---------------------------------- Content ---------------------------------#
+
+#begin Fonts/Pixel-Unicode_normal.fnt
+/importer:BitmapFontImporter
+/processor:BitmapFontProcessor
+/build:Fonts/Pixel-Unicode_normal.fnt
+
+#begin Fonts/Pixel-Unicode_normal_0.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Fonts/Pixel-Unicode_normal_0.png
+
