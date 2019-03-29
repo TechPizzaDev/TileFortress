@@ -32,3 +32,15 @@
 /processorParam:TextureFormat=Color
 /build:Fonts/Pixel-Unicode_normal_0.png
 
+#begin Textures/Tiles.json
+/copy:Textures/Tiles.json
+
+#begin Textures/Tiles/grass.png
+/copy:Textures/Tiles/grass.png
+
+#begin Textures/Unnamed.json
+/copy:Textures/Unnamed.json
+
+#begin Textures/Unnamed/grayscale.png
+/copy:Textures/Unnamed/grayscale.png
+

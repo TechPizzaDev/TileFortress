@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>5a3249ce-1fe9-4bdd-9644-6e6669bacefd</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>TileFortress</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)AppType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AppConstants.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AppInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GameWorld\Chunk.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GameWorld\Dimension.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GameWorld\Tile.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GameWorld\World.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Language.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Log.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Net\BufferExtensions.Read.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Net\BufferExtensions.Write.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Net\ChunkData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Net\ChunkRequest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Net\DataSequenceChannel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Net\EnumBufferExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Net\DataMessageType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Net\NetGamePeer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)versiontag.json" />
+  </ItemGroup>
+</Project>

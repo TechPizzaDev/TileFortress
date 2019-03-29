@@ -3,22 +3,29 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.28711.60
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TileFortress", "TileFortress\TileFortress.csproj", "{04B42939-23E1-41A6-8773-96C1DEA25719}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralShare.Core", "..\ThirdParty\GeneralShare\GeneralShare.Core\GeneralShare.Core.csproj", "{5C2DE6A1-31DE-4B78-9808-547DD294F55C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeneralShare.UI", "..\ThirdParty\GeneralShare\GeneralShare.UI\GeneralShare.UI.csproj", "{2D3D1EB7-64FE-42F5-A3B2-5992C27A3FE7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TileFortressServer", "TileFortressServer\TileFortressServer.csproj", "{93154F67-2BA2-4EB4-B099-B092F6000A5A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AtlasShare", "..\ThirdParty\AtlasShare\Source\AtlasShare\AtlasShare.csproj", "{5735E119-E480-4FB4-90E1-9B1C492C9E57}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TileFortressClient", "TileFortressClient\TileFortressClient.csproj", "{04B42939-23E1-41A6-8773-96C1DEA25719}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "TileFortress", "TileFortress\TileFortress.shproj", "{5A3249CE-1FE9-4BDD-9644-6E6669BACEFD}"
+EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		TileFortress\TileFortress.projitems*{04b42939-23e1-41a6-8773-96c1dea25719}*SharedItemsImports = 4
+		TileFortress\TileFortress.projitems*{5a3249ce-1fe9-4bdd-9644-6e6669bacefd}*SharedItemsImports = 13
+		TileFortress\TileFortress.projitems*{93154f67-2ba2-4eb4-b099-b092f6000a5a}*SharedItemsImports = 4
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{04B42939-23E1-41A6-8773-96C1DEA25719}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{04B42939-23E1-41A6-8773-96C1DEA25719}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{04B42939-23E1-41A6-8773-96C1DEA25719}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{04B42939-23E1-41A6-8773-96C1DEA25719}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5C2DE6A1-31DE-4B78-9808-547DD294F55C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5C2DE6A1-31DE-4B78-9808-547DD294F55C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5C2DE6A1-31DE-4B78-9808-547DD294F55C}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -27,6 +34,18 @@ Global
 		{2D3D1EB7-64FE-42F5-A3B2-5992C27A3FE7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2D3D1EB7-64FE-42F5-A3B2-5992C27A3FE7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2D3D1EB7-64FE-42F5-A3B2-5992C27A3FE7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{93154F67-2BA2-4EB4-B099-B092F6000A5A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93154F67-2BA2-4EB4-B099-B092F6000A5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93154F67-2BA2-4EB4-B099-B092F6000A5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93154F67-2BA2-4EB4-B099-B092F6000A5A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5735E119-E480-4FB4-90E1-9B1C492C9E57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5735E119-E480-4FB4-90E1-9B1C492C9E57}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5735E119-E480-4FB4-90E1-9B1C492C9E57}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5735E119-E480-4FB4-90E1-9B1C492C9E57}.Release|Any CPU.Build.0 = Release|Any CPU
+		{04B42939-23E1-41A6-8773-96C1DEA25719}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{04B42939-23E1-41A6-8773-96C1DEA25719}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{04B42939-23E1-41A6-8773-96C1DEA25719}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{04B42939-23E1-41A6-8773-96C1DEA25719}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
