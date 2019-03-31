@@ -3,6 +3,9 @@ using TileFortress.Net;
 using System;
 using System.Threading;
 using System.Net;
+using System.Runtime.InteropServices;
+using TileFortress.GameWorld;
+using K4os.Compression.LZ4;
 
 namespace TileFortress.Client.Net
 {
@@ -55,21 +58,48 @@ namespace TileFortress.Client.Net
         }
 
         protected void SendMessage(
-            NetOutgoingMessage message, NetDeliveryMethod method, DataSequenceChannel channel)
+            NetOutgoingMessage message,
+            NetDeliveryMethod method,
+            DataSequenceChannel channel = DataSequenceChannel.Default)
         {
             Peer.SendMessage(message, method, (int)channel);
         }
 
-        protected override void OnChunkData(NetIncomingMessage message, ChunkData data)
+        private void OnChunkData(ChunkData data)
         {
+            var chunk = new Chunk(data.Position);
 
+            for (int i = 0; i < Chunk.Size * Chunk.Size; i++)
+            {
+                Tile tile = data.Tiles[i];
+                chunk.TrySetTile(i, tile);
+            }
+
+            GameFrame._chunks[data.Position.X, data.Position.Y] = chunk;
         }
 
-        protected override bool ApproveClient(NetIncomingMessage message)
+        protected override void OnDataMessage(NetIncomingMessage message, DataMessageType type)
         {
-            return false;
+            switch (type)
+            {
+                case DataMessageType.ChunkData:
+                    ChunkPosition position = message.ReadPoint32();
+                    int length = message.ReadUInt16();
+
+                    Span<byte> compressedChunkBytes = stackalloc byte[length];
+                    message.Read(compressedChunkBytes);
+
+                    Span<Tile> tiles = stackalloc Tile[Chunk.Size * Chunk.Size];
+                    Span<byte> tileBytes = MemoryMarshal.AsBytes(tiles);
+                    LZ4Codec.Decode(compressedChunkBytes, tileBytes);
+
+                    //Log.Debug("Got data for chunk " + position);
+                    OnChunkData(new ChunkData(position, tiles));
+                    break;
+            }
         }
 
+        #region Peer Methods
         protected override void OnStatusChange(NetIncomingMessage message, NetConnectionStatus status)
         {
             switch (status)
@@ -100,5 +130,6 @@ namespace TileFortress.Client.Net
 
             return new NetClient(config);
         }
+        #endregion
     }
 }

@@ -1,24 +1,22 @@
-﻿using Microsoft.Xna.Framework;
-using System;
+﻿using System;
 using System.Diagnostics;
-using System.Threading;
+using Microsoft.Xna.Framework;
 using TileFortress.GameWorld;
+using TileFortress.Net;
 using TileFortress.Server.Net;
 
 namespace TileFortress.Server
 {
-    public class ServerGame
+    public partial class ServerGame
     {
         public delegate void LoadDelegate(ServerGame sender);
         public event LoadDelegate OnLoad;
         public event LoadDelegate OnUnload;
 
-        private const int _updatesPerSecond = 40;
+        private const int _updatesPerSecond = 20;
         private Ticker _ticker;
         private World _world;
         private NetGameServer _server;
-
-        private bool ExitNextFrame { get; set; }
 
         public ServerGame(World world, NetGameServer server)
         {
@@ -30,6 +28,32 @@ namespace TileFortress.Server
         public void Update(GameTime time)
         {
             _world.Update(time);
+
+            ProcessNetworking();
+        }
+
+        private void ProcessNetworking()
+        {
+            ProcessChunkRequests();
+        }
+
+        private void ProcessChunkRequests()
+        {
+            var queue = _server.ChunkRequests;
+            int maxRequests = 250;
+
+            lock (queue)
+            {
+                while (queue.Count > 0 && maxRequests > 0)
+                {
+                    ChunkRequest request = queue.Dequeue();
+                    if (_world.TryGetChunk(request.Position, out Chunk chunk))
+                    {
+                        _server.SendChunk(request.Sender, chunk);
+                        maxRequests--;
+                    }
+                }
+            }
         }
 
         public void Run()
@@ -48,59 +72,7 @@ namespace TileFortress.Server
 
         public void Exit()
         {
-            ExitNextFrame = true;
-        }
-
-        private class Ticker
-        {
-            private ServerGame _game;
-            private GameTime _time;
-            private Stopwatch _stopwatch;
-
-            private TimeSpan _maxElapsed = TimeSpan.FromMilliseconds(250);
-            private TimeSpan _targetRate;
-            private TimeSpan _accumulatedTime;
-            private long _previousTicks;
-
-            public Ticker(ServerGame game)
-            {
-                _game = game;
-                _time = new GameTime();
-                _stopwatch = new Stopwatch();
-            }
-
-            public void Start(TimeSpan targetRate)
-            {
-                _targetRate = targetRate;
-
-                _stopwatch.Start();
-                while (Tick()) ;
-                _stopwatch.Stop();
-            }
-
-            private bool Tick()
-            {
-                long currentTicks = _stopwatch.Elapsed.Ticks;
-                _accumulatedTime += TimeSpan.FromTicks(currentTicks - _previousTicks);
-                _previousTicks = currentTicks;
-
-                if (_accumulatedTime < _targetRate)
-                {
-                    int sleepTime = (int)(_targetRate - _accumulatedTime).TotalMilliseconds;
-                    Thread.Sleep(sleepTime);
-                    return !_game.ExitNextFrame;
-                }
-                
-                if (_accumulatedTime > _maxElapsed)
-                    _accumulatedTime = _maxElapsed;
-
-                _time.ElapsedGameTime = _accumulatedTime;
-                _time.TotalGameTime += _accumulatedTime;
-                _accumulatedTime = TimeSpan.Zero;
-
-                _game.Update(_time);
-                return !_game.ExitNextFrame;
-            }
+            _ticker.Stop();
         }
     }
 }

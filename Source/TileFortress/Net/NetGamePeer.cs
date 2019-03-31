@@ -1,15 +1,12 @@
-﻿using Lidgren.Network;
-using System;
+﻿using System;
 using System.Threading;
-using TileFortress.GameWorld;
+
+using Lidgren.Network;
 
 namespace TileFortress.Net
 {
     public abstract class NetGamePeer<TPeer> : IDisposable where TPeer : NetPeer
     {
-        // TODO: pls use dis for compressing "big" messages
-        // https://github.com/MiloszKrajewski/K4os.Compression.LZ4
-
         public delegate void StateDelegate(NetGamePeer<TPeer> sender);
         public delegate void ErrorDelegate(NetGamePeer<TPeer> sender, NetIncomingMessage message, object error);
 
@@ -28,6 +25,54 @@ namespace TileFortress.Net
             peer.RegisterReceivedCallback(ReceiveMessage, new SynchronizationContext());
         }
 
+        #region Data Messages
+        private void ReadDataMessage(NetIncomingMessage msg)
+        {
+            var type = msg.ReadEnum<DataMessageType>();
+            switch (type)
+            {
+                case DataMessageType.ChatMessage:
+                    string value = msg.ReadString();
+                    OnChatMessage(msg, value);
+                    break;
+            }
+            OnDataMessage(msg, type);
+        }
+
+        protected virtual void OnDataMessage(NetIncomingMessage message, DataMessageType type)
+        {
+        }
+
+        protected virtual void OnChatMessage(NetIncomingMessage message, string value)
+        {
+            var endPoint = message.SenderConnection.RemoteEndPoint;
+            Log.Info($"Chat [{endPoint}]: {value}");
+        }
+        #endregion
+
+        #region Peer Messages
+        protected virtual void OnMessage(NetIncomingMessage message)
+        {
+        }
+
+        protected virtual void OnUnconnectedData(NetIncomingMessage message)
+        {
+        }
+
+        protected virtual void OnStatusChange(NetIncomingMessage message, NetConnectionStatus status)
+        {
+            Log.Debug(status + ": " + message.ReadString());
+        }
+        #endregion
+
+        #region Peer Methods
+        protected NetOutgoingMessage CreateMessage(DataMessageType type)
+        {
+            var msg = Peer.CreateMessage();
+            msg.Write(type);
+            return msg;
+        }
+
         private void ReceiveMessage(object state)
         {
             var peer = state as NetPeer;
@@ -36,11 +81,6 @@ namespace TileFortress.Net
             {
                 switch (msg.MessageType)
                 {
-                    case NetIncomingMessageType.ConnectionApproval:
-                        if (ApproveClient(msg))
-                            msg.SenderConnection.Approve();
-                        break;
-
                     case NetIncomingMessageType.UnconnectedData:
                         OnUnconnectedData(msg);
                         break;
@@ -55,6 +95,7 @@ namespace TileFortress.Net
                         break;
 
                     default:
+                        OnMessage(msg);
                         break;
                 }
             }
@@ -65,70 +106,13 @@ namespace TileFortress.Net
             peer.Recycle(msg);
         }
 
-        private void ReadDataMessage(NetIncomingMessage msg)
+        protected void SendMessage(
+            NetOutgoingMessage message, 
+            NetConnection recipient, 
+            NetDeliveryMethod method,
+            DataSequenceChannel channel = DataSequenceChannel.Default)
         {
-            var type = msg.ReadEnum<DataMessageType>();
-            switch (type)
-            {
-                case DataMessageType.ChatMessage:
-                    string value = msg.ReadString();
-                    OnChatMessage(msg, value);
-                    break;
-
-                case DataMessageType.ChunkRequest:
-                    var position = msg.ReadPoint32();
-                    var cr = new ChunkRequest(position);
-                    OnChunkRequest(msg, cr);
-                    break;
-
-                case DataMessageType.ChunkData:
-                    Span<ushort> tiles = stackalloc ushort[Chunk.Size * Chunk.Size];
-
-                    var cd = new ChunkData(tiles);
-                    OnChunkData(msg, cd);
-                    break;
-
-                default:
-                    OnDataMessage(msg, type);
-                    break;
-            }
-        }
-
-        protected abstract bool ApproveClient(NetIncomingMessage message);
-
-        protected virtual void OnStatusChange(NetIncomingMessage message, NetConnectionStatus status)
-        {
-            Log.Debug(status + ": " + message.ReadString());
-        }
-
-        protected virtual void OnChatMessage(NetIncomingMessage message, string value)
-        {
-            var endPoint = message.SenderConnection.RemoteEndPoint;
-            Log.Info($"Chat [{endPoint}]: {value}");
-        }
-
-        protected virtual void OnChunkData(NetIncomingMessage message, ChunkData data)
-        {
-        }
-
-        protected virtual void OnChunkRequest(NetIncomingMessage message, ChunkRequest request)
-        {
-        }
-
-        protected virtual void OnUnconnectedData(NetIncomingMessage message)
-        {
-        }
-
-        protected virtual void OnDataMessage(NetIncomingMessage message, DataMessageType type)
-        {
-            Log.Debug(type + ": " + message.ReadString());
-        }
-
-        protected NetOutgoingMessage CreateMessage(DataMessageType type)
-        {
-            var msg = Peer.CreateMessage();
-            msg.Write(type);
-            return msg;
+            Peer.SendMessage(message, recipient, method, (int)channel);
         }
 
         public void Open()
@@ -152,7 +136,9 @@ namespace TileFortress.Net
 
             OnClose?.Invoke(this);
         }
+        #endregion
 
+        #region IDisposable
         protected virtual void Dispose(bool disposing)
         {
             if (!IsDisposed)
@@ -176,5 +162,6 @@ namespace TileFortress.Net
         {
             Dispose(false);
         }
+        #endregion
     }
 }

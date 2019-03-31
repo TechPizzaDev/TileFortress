@@ -1,6 +1,6 @@
-﻿using GeneralShare;
-using System;
+﻿using System;
 using System.Threading;
+using GeneralShare;
 using TileFortress.GameWorld;
 using TileFortress.Server.Net;
 
@@ -25,7 +25,7 @@ namespace TileFortress.Server
                 Log.LineBreak();
                 Log.Info("Successful exit after " + DebugUtils.TimeSinceStart.ToPreciseString(), false);
             }
-            catch(Exception exc)
+            catch (Exception exc)
             {
                 Log.Error(new Exception("Uncaught exception during execution.", exc));
             }

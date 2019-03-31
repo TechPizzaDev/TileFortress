@@ -1,4 +1,5 @@
-﻿
+﻿using System;
+
 namespace TileFortress.GameWorld
 {
     public class Chunk
@@ -7,60 +8,86 @@ namespace TileFortress.GameWorld
 
         private Tile[] _tiles;
 
-        public Chunk()
+        public ChunkPosition Position { get; }
+
+        public Chunk(ChunkPosition position)
         {
+            Position = position;
+
             _tiles = new Tile[Size * Size];
         }
 
-        public bool GetIndex(int x, int y, out int index)
+        public void Fill(Tile tile)
         {
-            if (x < 0 || x > Size)
-            {
-                index = -1;
-                return false;
-            }
-
-            if (y < 0 || y > Size)
-            {
-                index = -1;
-                return false;
-            }
-
-            index = x + y * Size;
-            return true;
+            for (int i = 0; i < _tiles.Length; i++)
+                _tiles[i] = tile;
         }
 
-        public bool GetTile(int index, out Tile tile)
+        #region Get Tile
+        public Tile GetTile(int index)
+        {
+            return _tiles[index];
+        }
+
+        public Tile GetTile(int x, int y)
+        {
+            int index = x + y * Size;
+            return _tiles[index];
+        }
+
+        public bool TryGetTile(int index, out Tile tile)
         {
             if (index < 0 || index >= _tiles.Length)
             {
                 tile = default;
                 return false;
             }
-
             tile = _tiles[index];
             return true;
         }
 
-        public bool GetTile(int x, int y, out Tile tile)
+        public bool TryGetTile(int x, int y, out Tile tile)
         {
-            if (GetIndex(x, y, out int index))
-            {
-                tile = _tiles[index];
-                return true;
-            }
-            tile = default;
-            return false;
+            int index = x + y * Size;
+            return TryGetTile(index, out tile);
         }
 
-        public bool SetTile(int x, int y, Tile tile)
+        public ReadOnlySpan<Tile> GetTileSpan()
         {
-            if (GetIndex(x, y, out int index))
-            {
-                _tiles[index] = tile;
-                return true;
-            }
-            return false;
+            return new ReadOnlySpan<Tile>(_tiles);
+        }
+        #endregion
+
+        #region Set Tile
+        public void SetTile(int index, Tile tile)
+        {
+            _tiles[index] = tile;
+        }
+
+        public void SetTile(int x, int y, Tile tile)
+        {
+            int index = x + y * Size;
+            SetTile(index, tile);
+        }
+
+        public bool TrySetTile(int index, Tile tile)
+        {
+            if (index < 0 || index >= _tiles.Length)
+                return false;
+            _tiles[index] = tile;
+            return true;
+        }
+
+        public bool TrySetTile(int x, int y, Tile tile)
+        {
+            int index = x + y * Size;
+            return TrySetTile(index, tile);
+        }
+        #endregion
+
+        public override string ToString()
+        {
+            return "Chunk " + Position;
         }
     }
 }

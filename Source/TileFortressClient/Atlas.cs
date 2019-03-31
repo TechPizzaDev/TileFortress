@@ -51,7 +51,7 @@ namespace TileFortress.Client
             Regions = new ReadOnlyWrapper(this);
         }
 
-        public bool GetRegion(string textureName, out TextureRegion2D region)
+        public bool TryGetRegion(string textureName, out TextureRegion2D region)
         {
             bool success = _regions.TryGetValue(textureName, out Region reg);
             region = reg; // 'out' cannot implicitly cast Region to TextureRegion2D
@@ -60,7 +60,7 @@ namespace TileFortress.Client
 
         public TextureRegion2D GetRegion(string textureName)
         {
-            if(GetRegion(textureName, out var tex))
+            if(TryGetRegion(textureName, out var tex))
                 return tex;
             throw new Exception($"Region \"{textureName}\" was not found.");
         }

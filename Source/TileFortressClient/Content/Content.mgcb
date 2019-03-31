@@ -32,11 +32,24 @@
 /processorParam:TextureFormat=Color
 /build:Fonts/Pixel-Unicode_normal_0.png
 
+#begin Shaders/ChunkShader.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/processorParam:Defines=
+/build:Shaders/ChunkShader.fx
+
 #begin Textures/Tiles.json
 /copy:Textures/Tiles.json
 
 #begin Textures/Tiles/grass.png
 /copy:Textures/Tiles/grass.png
+
+#begin Textures/Tiles/gravel.png
+/copy:Textures/Tiles/gravel.png
+
+#begin Textures/Tiles/sand.png
+/copy:Textures/Tiles/sand.png
 
 #begin Textures/Unnamed.json
 /copy:Textures/Unnamed.json
