@@ -9,11 +9,12 @@ namespace TileFortress.Server
 {
     public partial class ServerGame
     {
+        private const int UpdatesPerSecond = 40;
+
         public delegate void LoadDelegate(ServerGame sender);
         public event LoadDelegate OnLoad;
         public event LoadDelegate OnUnload;
 
-        private const int _updatesPerSecond = 20;
         private Ticker _ticker;
         private World _world;
         private NetGameServer _server;
@@ -27,6 +28,8 @@ namespace TileFortress.Server
 
         public void Update(GameTime time)
         {
+            _server.ReadMessages();
+
             _world.Update(time);
 
             ProcessNetworking();
@@ -42,16 +45,13 @@ namespace TileFortress.Server
             var queue = _server.ChunkRequests;
             int maxRequests = 250;
 
-            lock (queue)
+            while (queue.Count > 0 && maxRequests > 0)
             {
-                while (queue.Count > 0 && maxRequests > 0)
+                ChunkRequest request = queue.Dequeue();
+                if (_world.TryGetChunk(request.Position, out Chunk chunk))
                 {
-                    ChunkRequest request = queue.Dequeue();
-                    if (_world.TryGetChunk(request.Position, out Chunk chunk))
-                    {
-                        _server.SendChunk(request.Sender, chunk);
-                        maxRequests--;
-                    }
+                    _server.SendChunk(request.Sender, chunk);
+                    maxRequests--;
                 }
             }
         }
@@ -62,7 +62,7 @@ namespace TileFortress.Server
             _server.Open();
             OnLoad?.Invoke(this);
 
-            double ticksPerFrame = 1d / _updatesPerSecond * TimeSpan.TicksPerSecond;
+            double ticksPerFrame = 1d / UpdatesPerSecond * TimeSpan.TicksPerSecond;
             _ticker.Start(TimeSpan.FromTicks((long)ticksPerFrame));
 
             _server.Close();

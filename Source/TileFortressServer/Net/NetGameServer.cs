@@ -43,7 +43,7 @@ namespace TileFortress.Server.Net
                 ChunkRequests.Enqueue(request);
         }
         #endregion
-
+        
         #region Data Send Methods
         public void SendChunk(NetConnection recipient, Chunk chunk)
         {
@@ -77,8 +77,6 @@ namespace TileFortress.Server.Net
                     {
                         var position = message.ReadPoint32();
                         var request = new ChunkRequest(position, message.SenderConnection);
-                        if (request.Sender == null)
-                            throw new Exception();
                         OnChunkRequest(request);
                         break;
                     }

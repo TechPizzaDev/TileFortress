@@ -75,7 +75,7 @@ namespace TileFortress.Client.Net
                 chunk.TrySetTile(i, tile);
             }
 
-            GameFrame._chunks[data.Position.X, data.Position.Y] = chunk;
+            ClientGame._chunks[data.Position.X, data.Position.Y] = chunk;
         }
 
         protected override void OnDataMessage(NetIncomingMessage message, DataMessageType type)

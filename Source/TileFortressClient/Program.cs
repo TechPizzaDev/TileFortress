@@ -13,7 +13,7 @@ namespace TileFortress.Client
                 AppInfo.SetType(AppType.Client);
                 AppInfo.SetCultureInfo();
 
-                using (var game = new GameFrame())
+                using (var game = new ClientGame())
                     game.Run();
 
                 Log.LineBreak();

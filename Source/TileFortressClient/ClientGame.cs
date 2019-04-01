@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using MonoGame.Extended;
 using MonoGame.Extended.BitmapFonts;
 using MonoGame.Extended.TextureAtlases;
 using System;
@@ -15,7 +16,7 @@ using TileFortress.Utils;
 
 namespace TileFortress.Client
 {
-    public class GameFrame : Game
+    public class ClientGame : Game
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
@@ -27,10 +28,15 @@ namespace TileFortress.Client
 
         private Effect _chunkShader;
 
-        private NetGameClient _netClient;
+        private NetGameClient _client;
         public static Chunk[,] _chunks;
 
-        public GameFrame()
+        private Vector2 offset;
+        private float zoom = 1;
+
+        private Tile brushTile = new Tile(0);
+
+        public ClientGame()
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
@@ -44,15 +50,15 @@ namespace TileFortress.Client
             base.Initialize();
             Input.SetWindow(Window);
 
-            _netClient = new NetGameClient();
-            _netClient.Open();
+            _client = new NetGameClient();
+            _client.Open();
 
-            const int radius = 6;
+            const int radius = 8;
             _chunks = new Chunk[radius, radius];
 
             System.Threading.Tasks.Task.Run(() =>
             {
-                _netClient.Connect(IPAddress.Loopback, AppConstants.NetDefaultPort);
+                _client.Connect(IPAddress.Loopback, AppConstants.NetDefaultPort);
 
                 for (int y = 0; y < radius; y++)
                 {
@@ -60,7 +66,8 @@ namespace TileFortress.Client
                     {
                         var pos = new ChunkPosition(x, y);
                         var request = new ChunkRequest(pos);
-                        _netClient.RequestChunk(request);
+                        _client.RequestChunk(request);
+                        System.Threading.Thread.Sleep(1);
                     }
                 }
             });
@@ -97,36 +104,72 @@ namespace TileFortress.Client
 
         protected override void UnloadContent()
         {
-            _netClient.Close();
+            _client.Dispose();
         }
-        
+
+        private Matrix _transform;
+
         protected override void Update(GameTime time)
         {
-            if (Keyboard.GetState().IsKeyDown(Keys.Escape))
+            Input.Update(time);
+            if (Input.IsKeyDown(Keys.Escape))
                 Exit();
 
+            _client.ReadMessages();
 
+            if (Input.IsKeyDown(Keys.D1))
+            {
+                brushTile = new Tile(0);
+            }
+            else if (Input.IsKeyDown(Keys.D2))
+            {
+                brushTile = new Tile(1);
+            }
+            else if (Input.IsKeyDown(Keys.D3))
+            {
+                brushTile = new Tile(2);
+            }
+            else if (Input.IsKeyDown(Keys.D4))
+            {
+                brushTile = new Tile(3);
+            }
 
-            Input.Update(time);
+            var view = GraphicsDevice.Viewport;
+            _transform =
+                Matrix.CreateTranslation(offset.ToVector3()) *
+                Matrix.CreateScale(zoom) * 
+                Matrix.CreateTranslation(view.Width / 2f, view.Height / 2f, 0);
+
+            var mouseInWorld = Vector2.Transform(Input.MousePosition.ToVector2(), _transform);
+            Console.WriteLine(mouseInWorld);
+
+            _res = mouseInWorld;
+
+            zoom = MathHelper.Clamp(zoom + Input.MouseScroll / 1000, 0.5f, 4f);
+            if (Input.IsMouseDown(MouseButton.Left))
+                offset += Input.MouseVelocity.ToVector2() / zoom;
+
             base.Update(time);
         }
+
+        private Vector2 _res;
 
         protected override void Draw(GameTime time)
         {
             GraphicsDevice.Clear(new Color(25, 40, 31));
 
-            var transform = Matrix.CreateScale(1f);
-
             _spriteBatch.Begin(
                samplerState: SamplerState.PointClamp,
                blendState: BlendState.NonPremultiplied,
                effect: _chunkShader,
-               transformMatrix: transform);
+               transformMatrix: _transform);
 
             foreach (var chunk in _chunks)
             {
                 DrawChunk(chunk);
             }
+
+            _spriteBatch.DrawFilledRectangle(new RectangleF(_res.X - 4, _res.Y - 4, 8, 8), Color.Red);
 
             _spriteBatch.End();
 

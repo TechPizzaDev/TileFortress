@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
 
 using Lidgren.Network;
@@ -14,6 +16,8 @@ namespace TileFortress.Net
         public event StateDelegate OnClose;
         public event ErrorDelegate OnError;
 
+        private ConcurrentQueue<NetIncomingMessage> _messageQueue;
+
         public bool IsDisposed { get; private set; }
 
         protected TPeer Peer { get; }
@@ -22,7 +26,8 @@ namespace TileFortress.Net
         public NetGamePeer(TPeer peer)
         {
             Peer = peer;
-            peer.RegisterReceivedCallback(ReceiveMessage, new SynchronizationContext());
+            Peer.RegisterReceivedCallback(ReceiveMessage, new SynchronizationContext());
+            _messageQueue = new ConcurrentQueue<NetIncomingMessage>();
         }
 
         #region Data Messages
@@ -75,35 +80,51 @@ namespace TileFortress.Net
 
         private void ReceiveMessage(object state)
         {
-            var peer = state as NetPeer;
+            var peer = state as TPeer;
             var msg = peer.ReadMessage();
-            try
+
+            if (msg != null)
             {
-                switch (msg.MessageType)
+                lock (_messageQueue)
+                    _messageQueue.Enqueue(msg);
+            }
+        }
+
+        public int ReadMessages()
+        {
+            int count = 0;
+            while (_messageQueue.TryDequeue(out NetIncomingMessage msg))
+            {
+                try
                 {
-                    case NetIncomingMessageType.UnconnectedData:
-                        OnUnconnectedData(msg);
-                        break;
+                    count++;
+                    switch (msg.MessageType)
+                    {
+                        case NetIncomingMessageType.Data:
+                            ReadDataMessage(msg);
+                            break;
 
-                    case NetIncomingMessageType.Data:
-                        ReadDataMessage(msg);
-                        break;
+                        case NetIncomingMessageType.StatusChanged:
+                            NetConnectionStatus status = msg.ReadStatus();
+                            OnStatusChange(msg, status);
+                            break;
 
-                    case NetIncomingMessageType.StatusChanged:
-                        NetConnectionStatus status = msg.ReadStatus();
-                        OnStatusChange(msg, status);
-                        break;
+                        case NetIncomingMessageType.UnconnectedData:
+                            OnUnconnectedData(msg);
+                            break;
 
-                    default:
-                        OnMessage(msg);
-                        break;
+                        default:
+                            OnMessage(msg);
+                            break;
+                    }
                 }
+                catch (Exception exc)
+                {
+                    OnError?.Invoke(this, msg, exc);
+                }
+                Peer.Recycle(msg);
             }
-            catch (Exception exc)
-            {
-                OnError?.Invoke(this, msg, exc);
-            }
-            peer.Recycle(msg);
+            return count;
         }
 
         protected void SendMessage(
@@ -130,7 +151,7 @@ namespace TileFortress.Net
             {
                 Thread.Sleep(1);
                 sleeps++;
-                if (sleeps > Peer.Configuration.ConnectionTimeout * 1000)
+                if (sleeps > (Peer.Configuration.ConnectionTimeout + 1f) * 1000)
                     break;
             }
 
@@ -145,7 +166,7 @@ namespace TileFortress.Net
             {
                 if (disposing)
                 {
-
+                    Close();
                 }
 
                 IsDisposed = true;
