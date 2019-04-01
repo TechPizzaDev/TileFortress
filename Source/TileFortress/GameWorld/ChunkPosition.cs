@@ -16,6 +16,16 @@ namespace TileFortress.GameWorld
             Y = y;
         }
 
+        public static ChunkPosition FromTilePos(int x, int y)
+        {
+            return new ChunkPosition(x / 16, y / 16);
+        }
+
+        public static ChunkPosition FromTilePos(Point point)
+        {
+            return FromTilePos(point.X, point.Y);
+        }
+
         public static implicit operator ChunkPosition(Point point)
         {
             return new ChunkPosition(point.X, point.Y);

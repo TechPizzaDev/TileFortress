@@ -34,7 +34,7 @@ namespace TileFortress.Client
         private Vector2 offset;
         private float zoom = 1;
 
-        private Tile brushTile = new Tile(0);
+        private Tile _brushTile = new Tile(0);
 
         public ClientGame()
         {
@@ -119,40 +119,55 @@ namespace TileFortress.Client
 
             if (Input.IsKeyDown(Keys.D1))
             {
-                brushTile = new Tile(0);
+                _brushTile = new Tile(0);
             }
             else if (Input.IsKeyDown(Keys.D2))
             {
-                brushTile = new Tile(1);
+                _brushTile = new Tile(1);
             }
             else if (Input.IsKeyDown(Keys.D3))
             {
-                brushTile = new Tile(2);
+                _brushTile = new Tile(2);
             }
             else if (Input.IsKeyDown(Keys.D4))
             {
-                brushTile = new Tile(3);
+                _brushTile = new Tile(3);
             }
 
             var view = GraphicsDevice.Viewport;
             _transform =
                 Matrix.CreateTranslation(offset.ToVector3()) *
-                Matrix.CreateScale(zoom) * 
+                Matrix.CreateScale(zoom) *
                 Matrix.CreateTranslation(view.Width / 2f, view.Height / 2f, 0);
 
-            var mouseInWorld = Vector2.Transform(Input.MousePosition.ToVector2(), _transform);
-            Console.WriteLine(mouseInWorld);
+            var invertedWorld = Matrix.Invert(_transform);
+            _mouseInWorld = Vector2.Transform(Input.MousePosition.ToVector2(), invertedWorld);
 
-            _res = mouseInWorld;
-
+            var tmp = _mouseInWorld / 8f;
+            _selectedTile = new Point((int)tmp.X, (int)tmp.Y);
+            
             zoom = MathHelper.Clamp(zoom + Input.MouseScroll / 1000, 0.5f, 4f);
             if (Input.IsMouseDown(MouseButton.Left))
                 offset += Input.MouseVelocity.ToVector2() / zoom;
 
+            if (Input.IsMouseDown(MouseButton.Right))
+            {
+                var chunkPos = ChunkPosition.FromTilePos(_selectedTile);
+                if (chunkPos.X >= 0 && chunkPos.X < _chunks.GetLength(0) &&
+                   chunkPos.Y >= 0 && chunkPos.Y < _chunks.GetLength(1))
+                {
+                    var tilePos = new Point(_selectedTile.X % 16, _selectedTile.Y % 16);
+
+                    var chunk = _chunks[chunkPos.X, chunkPos.Y];
+                    chunk.TrySetTile(tilePos.X, tilePos.Y, _brushTile);
+                }
+            }
+
             base.Update(time);
         }
 
-        private Vector2 _res;
+        private Vector2 _mouseInWorld;
+        private Point _selectedTile;
 
         protected override void Draw(GameTime time)
         {
@@ -169,7 +184,8 @@ namespace TileFortress.Client
                 DrawChunk(chunk);
             }
 
-            _spriteBatch.DrawFilledRectangle(new RectangleF(_res.X - 4, _res.Y - 4, 8, 8), Color.Red);
+            _spriteBatch.DrawFilledRectangle(new RectangleF(_mouseInWorld.X - 4, _mouseInWorld.Y - 4, 8, 8), Color.Red);
+            _spriteBatch.DrawFilledRectangle(new RectangleF(_selectedTile.X * 8, _selectedTile.Y * 8, 8, 8), Color.Purple);
 
             _spriteBatch.End();
 
@@ -211,6 +227,8 @@ namespace TileFortress.Client
                         continue;
 
                     var region = GetTileRegion(tile);
+                    if (region == null)
+                        continue;
 
                     int xx = x + chunk.Position.TileX;
                     int yy = y + chunk.Position.TileY;
