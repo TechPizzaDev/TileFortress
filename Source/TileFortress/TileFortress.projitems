@@ -12,10 +12,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)AppType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AppConstants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)AppInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GameWorld\BuildOrder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GameWorld\ChunkPosition.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GameWorld\Chunk.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GameWorld\Dimension.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GameWorld\Tile.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GameWorld\TilePosition.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GameWorld\World.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Language.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Log.cs" />
@@ -27,6 +29,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Net\EnumBufferExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\DataMessageType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\NetGamePeer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pathfinding\AStar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\SimplexNoise.cs" />
   </ItemGroup>
   <ItemGroup>

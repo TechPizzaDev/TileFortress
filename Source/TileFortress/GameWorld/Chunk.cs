@@ -6,6 +6,9 @@ namespace TileFortress.GameWorld
     {
         public const int Size = 16;
 
+        public delegate void ChunkUpdateDelegate(Chunk sender, int index);
+        public event ChunkUpdateDelegate OnChunkUpdate;
+
         private Tile[] _tiles;
 
         public ChunkPosition Position { get; }
@@ -35,6 +38,12 @@ namespace TileFortress.GameWorld
             return _tiles[index];
         }
 
+        public Tile GetTile(TilePosition position)
+        {
+            int index = position.X + position.Y * Size;
+            return _tiles[index];
+        }
+
         public bool TryGetTile(int index, out Tile tile)
         {
             if (index < 0 || index >= _tiles.Length)
@@ -52,6 +61,11 @@ namespace TileFortress.GameWorld
             return TryGetTile(index, out tile);
         }
 
+        public bool TryGetTile(TilePosition position, out Tile tile)
+        {
+            return TryGetTile(position.LocalX, position.LocalY, out tile);
+        }
+
         public ReadOnlySpan<Tile> GetTileSpan()
         {
             return new ReadOnlySpan<Tile>(_tiles);
@@ -62,6 +76,7 @@ namespace TileFortress.GameWorld
         public void SetTile(int index, Tile tile)
         {
             _tiles[index] = tile;
+            OnChunkUpdate?.Invoke(this, index);
         }
 
         public void SetTile(int x, int y, Tile tile)
@@ -70,11 +85,17 @@ namespace TileFortress.GameWorld
             SetTile(index, tile);
         }
 
+        public void SetTile(TilePosition position, Tile tile)
+        {
+            int index = position.X + position.Y * Size;
+            SetTile(index, tile);
+        }
+
         public bool TrySetTile(int index, Tile tile)
         {
             if (index < 0 || index >= _tiles.Length)
                 return false;
-            _tiles[index] = tile;
+            SetTile(index, tile);
             return true;
         }
 
@@ -83,11 +104,16 @@ namespace TileFortress.GameWorld
             int index = x + y * Size;
             return TrySetTile(index, tile);
         }
+
+        public bool TrySetTile(TilePosition position, Tile tile)
+        {
+            return TrySetTile(position.LocalX, position.LocalY, tile);
+        }
         #endregion
 
         public override string ToString()
         {
-            return "Chunk " + Position;
+            return $"Chunk ({Position})";
         }
     }
 }

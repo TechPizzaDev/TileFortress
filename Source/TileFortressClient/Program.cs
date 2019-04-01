@@ -1,5 +1,5 @@
-﻿using GeneralShare;
-using System;
+﻿using System;
+using GeneralShare;
 
 namespace TileFortress.Client
 {
@@ -19,10 +19,14 @@ namespace TileFortress.Client
                 Log.LineBreak();
                 Log.Info("Successful exit after " + DebugUtils.TimeSinceStart.ToPreciseString(), false);
             }
-            catch(Exception exc)
+#if RELEASE
+            catch (Exception exc)
             {
                 Log.Error(new Exception("Uncaught exception during execution.", exc));
+                if (DebugUtils.IsDebuggerAttached)
+                    throw;
             }
+#endif
             finally
             {
                 Log.Close();

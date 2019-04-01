@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
 using GeneralShare;
-using TileFortress.GameWorld;
 using TileFortress.Server.Net;
 
 namespace TileFortress.Server
@@ -25,10 +24,14 @@ namespace TileFortress.Server
                 Log.LineBreak();
                 Log.Info("Successful exit after " + DebugUtils.TimeSinceStart.ToPreciseString(), false);
             }
+#if RELEASE
             catch (Exception exc)
             {
                 Log.Error(new Exception("Uncaught exception during execution.", exc));
+                if (DebugUtils.IsDebuggerAttached)
+                    throw;
             }
+#endif
             finally
             {
                 Log.Close();
@@ -73,10 +76,7 @@ namespace TileFortress.Server
             server.OnOpen += (s) => Log.Info("Server listening on port " + s.Port);
             server.OnClose += (s) => Log.Info("Listener closed");
 
-            var world = new World();
-            world.OnUnload += (w) => Log.Info("World unloaded");
-
-            _game = new ServerGame(world, server);
+            _game = new ServerGame(server);
             _game.Run();
         }
 
