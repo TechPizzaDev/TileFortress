@@ -74,7 +74,6 @@ namespace TileFortress.GameWorld
 
                 _chunks.Add(position, chunk);
                 chunk.OnChunkUpdate += Chunk_OnChunkUpdate;
-                return true;
             }
             return true;
         }

@@ -9,9 +9,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Threading;
 using TileFortress.Client.Net;
 using TileFortress.GameWorld;
 using TileFortress.Net;
+using TileFortress.Pathfinding;
 using TileFortress.Utils;
 
 namespace TileFortress.Client
@@ -58,6 +60,8 @@ namespace TileFortress.Client
             base.Initialize();
             Input.SetWindow(Window);
 
+            _offset = new Vector2(-DrawDistance * Chunk.Size * 8) / 2f;
+
             _chunkUpdates = new float[DrawDistance, DrawDistance];
 
             _world = new World(World_ChunkRequest);
@@ -68,9 +72,15 @@ namespace TileFortress.Client
 
             _client = new NetGameClient();
             _client.Open();
+
             System.Threading.Tasks.Task.Run(() =>
             {
                 _client.Connect(IPAddress.Loopback, AppConstants.NetDefaultPort);
+
+                Thread.Sleep(1000);
+                AStar.BreadthFirstSearch(_world, new TilePosition(4, 4));
+
+                Log.Debug("BreadthFirstSearch finished");
             });
         }
 
@@ -133,9 +143,9 @@ namespace TileFortress.Client
 
             _tileRegions = new Dictionary<int, string>()
             {
-                { 1, "Tiles/sand" },
-                { 2, "Tiles/gravel" },
-                { 3, "Tiles/grass" },
+                {  1, "Tiles/sand"   },
+                {  2, "Tiles/gravel" },
+                {  3, "Tiles/grass"  },
             };
         }
 
@@ -198,7 +208,7 @@ namespace TileFortress.Client
                     for (int x = 0; x < brushSize * 2; x++)
                     {
                         var brushCenter = _selectedTile + new Point(x - brushSize, y - brushSize);
-                        var chunkPos = ChunkPosition.FromTile(brushCenter);
+                        var chunkPos = ChunkPosition.FromTile((TilePosition)brushCenter);
 
                         if (chunkPos.X >= 0 && chunkPos.X < DrawDistance &&
                             chunkPos.Y >= 0 && chunkPos.Y < DrawDistance)
@@ -261,6 +271,20 @@ namespace TileFortress.Client
             }
 
             _spriteBatch.DrawFilledRectangle(new RectangleF(_selectedTile.X * 8, _selectedTile.Y * 8, 8, 8), Color.Red);
+
+            if (AStar._visited != null)
+            {
+                lock (AStar._visited)
+                {
+                    foreach (var pair in AStar._visited)
+                    {
+                        var key = pair.Key;
+                        _spriteBatch.DrawFilledRectangle(
+                            new RectangleF(key.X * 8, key.Y * 8, 8, 8),
+                            new Color(Color.Yellow, 63));
+                    }
+                }
+            }
 
             _spriteBatch.End();
 

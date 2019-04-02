@@ -1,5 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
+﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using TileFortress.GameWorld;
 
 namespace TileFortress.Pathfinding
@@ -12,15 +14,15 @@ namespace TileFortress.Pathfinding
          * F is the total cost of the node.
          */
 
-        public static Queue<Point> _frontier;
-        public static Dictionary<Point, bool> _visited;
+        public static Queue<TilePosition> _frontier;
+        public static Dictionary<TilePosition, bool> _visited;
 
-        public static void BreadthFirstSearch(World world, Point start)
+        public static void BreadthFirstSearch(World world, TilePosition start)
         {
-            var frontier = new Queue<Point>();
+            var frontier = new Queue<TilePosition>();
             frontier.Enqueue(start);
 
-            var visited = new Dictionary<Point, bool>();
+            var visited = new Dictionary<TilePosition, bool>();
 
             _frontier = frontier;
             _visited = visited;
@@ -32,14 +34,21 @@ namespace TileFortress.Pathfinding
                 {
                     for (int x = -1; x < 2; x++)
                     {
-                        var tilePos = new Point(current.X + x, current.Y + y);
-                        var chunkPos = ChunkPosition.FromTilePos(tilePos);
+                        var tilePos = new TilePosition(current.X + x, current.Y + y);
+                        var chunkPos = ChunkPosition.FromTile(tilePos);
+                        if (chunkPos.X < 0 || chunkPos.X > 6 ||
+                            chunkPos.Y < 0 || chunkPos.Y > 6)
+                            continue;
+
                         if (world.TryGetChunk(chunkPos, out Chunk chunk))
                         {
-                            if (!visited.ContainsKey(tilePos))
+                            lock (visited)
                             {
-                                frontier.Enqueue(tilePos);
-                                visited[tilePos] = true;
+                                if (!visited.ContainsKey(tilePos) && chunk.GetTile(tilePos.LocalX, tilePos.LocalY).ID != 3)
+                                {
+                                    frontier.Enqueue(tilePos);
+                                    visited[tilePos] = true;
+                                }
                             }
                         }
                     }
@@ -49,3 +58,4 @@ namespace TileFortress.Pathfinding
 
     }
 }
+

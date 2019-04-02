@@ -65,11 +65,11 @@ namespace TileFortress.Server
             _world.Update(time);
 
             _lol += time.Delta;
-            while(_lol > 0.01f)
+            while(_lol > 0.5f)
             {
-                _lol -= 0.01f;
-                if (_lol > 0.5f)
-                    _lol = 0.5f;
+                _lol -= 0.5f;
+                if (_lol > 1f)
+                    _lol = 1f;
 
                 int drawDist = 5;
                 int cx = _rng.Next(drawDist);
