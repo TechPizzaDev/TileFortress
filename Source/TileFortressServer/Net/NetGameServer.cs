@@ -35,14 +35,6 @@ namespace TileFortress.Server.Net
 
         }
         #endregion
-
-        #region Data Message Handlers
-        private void OnChunkRequest(ChunkRequest request)
-        {
-            lock (ChunkRequests)
-                ChunkRequests.Enqueue(request);
-        }
-        #endregion
         
         #region Data Send Methods
         public void SendChunk(NetConnection recipient, Chunk chunk)
@@ -66,6 +58,29 @@ namespace TileFortress.Server.Net
             SendMessage(msg, recipient, NetDeliveryMethod.ReliableUnordered, DataSequenceChannel.Tiles);
             //Log.Debug("Sent " + chunk + " to " + recipient.RemoteEndPoint + " in " + watch.Elapsed.TotalMilliseconds.ToString("0.00") + "ms");
         }
+
+        public void SendBuildOrders(Queue<BuildOrder> orders)
+        {
+            if (Peer.Connections.Count <= 0)
+                return;
+
+            while (orders.Count > 0)
+            {
+                int toSend = Math.Min(orders.Count, 255);
+                var msg = CreateMessage(DataMessageType.BuildOrders);
+
+                msg.Write((byte)toSend);
+                for (int i = 0; i < toSend; i++)
+                {
+                    BuildOrder order = orders.Dequeue();
+                    msg.Write(order.Position);
+                    msg.Write(order.Tile.ID);
+                }
+
+                if (Peer.Connections.Count > 0)
+                    Peer.SendMessage(msg, Peer.Connections, NetDeliveryMethod.ReliableUnordered, (int)DataSequenceChannel.Tiles);
+            }
+        }
         #endregion
 
         #region Peer Methods
@@ -77,7 +92,7 @@ namespace TileFortress.Server.Net
                     {
                         var position = message.ReadPoint32();
                         var request = new ChunkRequest(position, message.SenderConnection);
-                        OnChunkRequest(request);
+                        ChunkRequests.Enqueue(request);
                         break;
                     }
             }

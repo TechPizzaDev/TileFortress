@@ -3,9 +3,10 @@ using TileFortress.Net;
 using System;
 using System.Threading;
 using System.Net;
-using System.Runtime.InteropServices;
 using TileFortress.GameWorld;
 using K4os.Compression.LZ4;
+using GeneralShare;
+using System.Collections.Generic;
 
 namespace TileFortress.Client.Net
 {
@@ -13,8 +14,10 @@ namespace TileFortress.Client.Net
     {
         private AutoResetEvent _connectWaitHandle;
 
-        public bool IsConnected => Peer.ConnectionStatus == NetConnectionStatus.Connected;
+        public Queue<BuildOrder> BuildOrders = new Queue<BuildOrder>();
+        public Queue<Chunk> Chunks = new Queue<Chunk>();
 
+        public bool IsConnected => Peer.ConnectionStatus == NetConnectionStatus.Connected;
         public float Latency
         {
             get
@@ -68,14 +71,13 @@ namespace TileFortress.Client.Net
         private void OnChunkData(ChunkData data)
         {
             var chunk = new Chunk(data.Position);
-
             for (int i = 0; i < Chunk.Size * Chunk.Size; i++)
             {
                 Tile tile = data.Tiles[i];
                 chunk.TrySetTile(i, tile);
             }
 
-            ClientGame._chunks[data.Position.X, data.Position.Y] = chunk;
+            Chunks.Enqueue(chunk);
         }
 
         protected override void OnDataMessage(NetIncomingMessage message, DataMessageType type)
@@ -83,19 +85,47 @@ namespace TileFortress.Client.Net
             switch (type)
             {
                 case DataMessageType.ChunkData:
-                    ChunkPosition position = message.ReadPoint32();
-                    int length = message.ReadUInt16();
+                    {
+                        ChunkPosition position = message.ReadPoint32();
+                        int length = message.ReadUInt16();
 
-                    Span<byte> compressedChunkBytes = stackalloc byte[length];
-                    message.Read(compressedChunkBytes);
+                        Span<byte> compressedChunkBytes = stackalloc byte[length];
+                        message.Read(compressedChunkBytes);
 
-                    Span<Tile> tiles = stackalloc Tile[Chunk.Size * Chunk.Size];
-                    Span<byte> tileBytes = MemoryMarshal.AsBytes(tiles);
-                    LZ4Codec.Decode(compressedChunkBytes, tileBytes);
+                        Span<Tile> tiles = stackalloc Tile[Chunk.Size * Chunk.Size];
+                        LZ4Codec.Decode(compressedChunkBytes, tiles.AsBytes());
 
-                    //Log.Debug("Got data for chunk " + position);
-                    OnChunkData(new ChunkData(position, tiles));
-                    break;
+                        OnChunkData(new ChunkData(position, tiles));
+                        break;
+                    }
+
+                case DataMessageType.BuildOrders:
+                    {
+                        byte updateCount = message.ReadByte();
+                        for (int i = 0; i < updateCount; i++)
+                        {
+                            TilePosition position = message.ReadPoint32();
+                            ushort tileID = message.ReadUInt16();
+
+                            var tile = new Tile(tileID);
+                            BuildOrders.Enqueue(new BuildOrder(position, tile));
+
+                            //var chunkPos = ChunkPosition.FromTile(order.Position);
+                            //var chunk = ClientGame._chunks[chunkPos.X, chunkPos.Y];
+                            //if (chunk == null)
+                            //{
+                            //    // TODO: build order may arrive before chunk data so
+                            //    // add orders to a set and discard them if they're not used in time
+                            //
+                            //    Log.Warning($"Tried to update unloaded chunk {chunkPos}.");
+                            //    return;
+                            //}
+                            //
+                            //if (!chunk.TrySetTile(order.Position, order.Tile))
+                            //    Log.Warning($"Invalid chunk update at position {order.Position} to chunk {chunkPos}.");
+                        }
+                        break;
+                    }
             }
         }
 

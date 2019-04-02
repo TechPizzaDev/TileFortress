@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using TileFortress.Utils;
 
@@ -10,35 +11,84 @@ namespace TileFortress.GameWorld
         public event LoadDelegate OnLoad;
         public event LoadDelegate OnUnload;
 
-        private SimplexNoise _noise;
+        public delegate void BuildOrderDelegate(World sender, Chunk chunk, BuildOrder order);
+        public event BuildOrderDelegate OnBuildOrder;
 
-        public World()
+        public delegate Chunk ChunkRequestDelegate(World sender, ChunkPosition position);
+        public readonly ChunkRequestDelegate ChunkRequest;
+
+        public SimplexNoise Noise;
+        private Dictionary<ChunkPosition, Chunk> _chunks;
+        private Queue<BuildOrder> _buildOrders;
+
+        public World(ChunkRequestDelegate chunkRequest)
         {
-            _noise = new SimplexNoise(123456);
+            ChunkRequest = chunkRequest ?? throw new ArgumentNullException(nameof(chunkRequest));
+
+            Noise = new SimplexNoise(123456);
+            _chunks = new Dictionary<ChunkPosition, Chunk>();
+            _buildOrders = new Queue<BuildOrder>();
         }
 
         public void Update(GameTime time)
         {
-            
+            ApplyBuildOrders();
         }
-        
-        public bool TryGetChunk(ChunkPosition position, out Chunk chunk)
+
+        private void ApplyBuildOrders()
         {
-            chunk = new Chunk(position);
+            var tmp = new Stack<BuildOrder>();
 
-            for (int y = 0; y < Chunk.Size; y++)
+            while (_buildOrders.Count > 0)
             {
-                for (int x = 0; x < Chunk.Size; x++)
+                BuildOrder order = _buildOrders.Dequeue();
+                ChunkPosition chunkPos = order.Position;
+                if (TryGetChunk(chunkPos, out Chunk chunk))
                 {
-                    int tx = x + chunk.Position.TileX;
-                    int ty = y + chunk.Position.TileY;
-
-                    int id = (int)Math.Floor(_noise.CalcPixel2D(tx, ty, 0.005f) / 256f * 3) + 1;
-                    chunk.TrySetTile(x, y, new Tile((ushort)id));
+                    chunk.TrySetTile(order.Position, order.Tile);
+                    OnBuildOrder?.Invoke(this, chunk, order);
                 }
+                else
+                    tmp.Push(order);
             }
 
+            while(tmp.Count > 0)
+            {
+                BuildOrder order = tmp.Pop();
+                _buildOrders.Enqueue(order);
+            }
+        }
+
+        public void EnqueueBuildOrder(BuildOrder order)
+        {
+            _buildOrders.Enqueue(order);
+        }
+
+        public bool TryGetChunk(ChunkPosition position, out Chunk chunk)
+        {
+            if (!_chunks.TryGetValue(position, out chunk))
+            {
+                chunk = ChunkRequest.Invoke(this, position);
+                if (chunk == null)
+                    return false;
+
+                _chunks.Add(position, chunk);
+                chunk.OnChunkUpdate += Chunk_OnChunkUpdate;
+                return true;
+            }
             return true;
+        }
+
+        private void Chunk_OnChunkUpdate(Chunk sender, int index)
+        {
+            var position = TilePosition.FromIndex(index);
+            position.X += sender.Position.TileX;
+            position.Y += sender.Position.TileY;
+
+            var tile = sender.GetTile(index);
+            var order = new BuildOrder(position, tile);
+
+            OnBuildOrder?.Invoke(this, sender, order);
         }
 
         public void Load()

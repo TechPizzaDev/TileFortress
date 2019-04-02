@@ -6,6 +6,7 @@ namespace TileFortress.Net
         Unknown,
         ChatMessage,
         ChunkRequest,
-        ChunkData
+        ChunkData,
+        BuildOrders
     }
 }

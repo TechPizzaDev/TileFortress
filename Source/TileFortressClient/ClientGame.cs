@@ -21,20 +21,28 @@ namespace TileFortress.Client
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
 
+        // content
         private BitmapFont _font;
-        private TextureRegion2D _whitePixel;
         private Atlas _atlas;
+        private TextureRegion2D _whitePixel;
         private Dictionary<int, string> _tileRegions;
 
-        private Effect _chunkShader;
-
+        // world
         private NetGameClient _client;
-        public static Chunk[,] _chunks;
+        private World _world;
+        private Dictionary<ChunkPosition, Chunk> _requests = new Dictionary<ChunkPosition, Chunk>();
+        private Tile _brushTile = new Tile(0);
 
-        private Vector2 offset;
-        private float zoom = 1;
+        // rendering
+        public const int DrawDistance = 5;
 
-        private Tile brushTile = new Tile(0);
+        private Effect _chunkShader;
+        private SimplexNoise _noise = new SimplexNoise(12345);
+        private Vector2 _offset;
+        private float _zoom = 1;
+
+        private float[,] _chunkUpdates;
+        private const float ChunkUpdateDuration = 0.75f;
 
         public ClientGame()
         {
@@ -50,29 +58,58 @@ namespace TileFortress.Client
             base.Initialize();
             Input.SetWindow(Window);
 
+            _chunkUpdates = new float[DrawDistance, DrawDistance];
+
+            _world = new World(World_ChunkRequest);
+            _world.OnBuildOrder += (w, c, order) =>
+            {
+                _chunkUpdates[c.Position.X, c.Position.Y] = ChunkUpdateDuration;
+            };
+
             _client = new NetGameClient();
             _client.Open();
-
-            const int radius = 8;
-            _chunks = new Chunk[radius, radius];
-
             System.Threading.Tasks.Task.Run(() =>
             {
                 _client.Connect(IPAddress.Loopback, AppConstants.NetDefaultPort);
-
-                for (int y = 0; y < radius; y++)
-                {
-                    for (int x = 0; x < radius; x++)
-                    {
-                        var pos = new ChunkPosition(x, y);
-                        var request = new ChunkRequest(pos);
-                        _client.RequestChunk(request);
-                        System.Threading.Thread.Sleep(1);
-                    }
-                }
             });
         }
-        
+
+        private Chunk World_ChunkRequest(World sender, ChunkPosition position)
+        {
+            if (!_requests.TryGetValue(position, out var chunk))
+            {
+                var request = new ChunkRequest(position);
+                _client.RequestChunk(request);
+                _requests.Add(position, null);
+                return null;
+            }
+            return chunk;
+        }
+
+        private void ProcessReceivedMessages()
+        {
+            ReadChunkMessages();
+            ReadBuildOrders();
+        }
+
+        private void ReadChunkMessages()
+        {
+            while (_client.Chunks.Count > 0)
+            {
+                var chunk = _client.Chunks.Dequeue();
+                _requests[chunk.Position] = chunk;
+            }
+        }
+
+        private void ReadBuildOrders()
+        {
+            while (_client.BuildOrders.Count > 0)
+            {
+                var order = _client.BuildOrders.Dequeue();
+                _world.EnqueueBuildOrder(order);
+            }
+        }
+
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
@@ -116,43 +153,82 @@ namespace TileFortress.Client
                 Exit();
 
             _client.ReadMessages();
+            ProcessReceivedMessages();
+
+            _world.Update(time);
 
             if (Input.IsKeyDown(Keys.D1))
             {
-                brushTile = new Tile(0);
+                _brushTile = new Tile(0);
             }
             else if (Input.IsKeyDown(Keys.D2))
             {
-                brushTile = new Tile(1);
+                _brushTile = new Tile(1);
             }
             else if (Input.IsKeyDown(Keys.D3))
             {
-                brushTile = new Tile(2);
+                _brushTile = new Tile(2);
             }
             else if (Input.IsKeyDown(Keys.D4))
             {
-                brushTile = new Tile(3);
+                _brushTile = new Tile(3);
             }
 
             var view = GraphicsDevice.Viewport;
             _transform =
-                Matrix.CreateTranslation(offset.ToVector3()) *
-                Matrix.CreateScale(zoom) * 
+                Matrix.CreateTranslation(_offset.ToVector3()) *
+                Matrix.CreateScale(_zoom) *
                 Matrix.CreateTranslation(view.Width / 2f, view.Height / 2f, 0);
 
-            var mouseInWorld = Vector2.Transform(Input.MousePosition.ToVector2(), _transform);
-            Console.WriteLine(mouseInWorld);
+            var invertedWorld = Matrix.Invert(_transform);
+            _mouseInWorld = Vector2.Transform(Input.MousePosition.ToVector2(), invertedWorld);
 
-            _res = mouseInWorld;
-
-            zoom = MathHelper.Clamp(zoom + Input.MouseScroll / 1000, 0.5f, 4f);
+            var tmp = _mouseInWorld / 8f;
+            _selectedTile = new Point((int)tmp.X, (int)tmp.Y);
+            
+            _zoom = MathHelper.Clamp(_zoom + Input.MouseScroll / 1000, 0.5f, 4f);
             if (Input.IsMouseDown(MouseButton.Left))
-                offset += Input.MouseVelocity.ToVector2() / zoom;
+                _offset += Input.MouseVelocity.ToVector2() / _zoom;
+
+            if (Input.IsMouseDown(MouseButton.Right) && _client.IsConnected)
+            {
+                const int brushSize = 3;
+                for (int y = 0; y < brushSize * 2; y++)
+                {
+                    for (int x = 0; x < brushSize * 2; x++)
+                    {
+                        var brushCenter = _selectedTile + new Point(x - brushSize, y - brushSize);
+                        var chunkPos = ChunkPosition.FromTile(brushCenter);
+
+                        if (chunkPos.X >= 0 && chunkPos.X < DrawDistance &&
+                            chunkPos.Y >= 0 && chunkPos.Y < DrawDistance)
+                        {
+                            if (_world.TryGetChunk(chunkPos, out var chunk))
+                            {
+                                var tilePos = new Point(brushCenter.X % 16, brushCenter.Y % 16);
+                                chunk.TrySetTile(tilePos.X, tilePos.Y, _brushTile);
+                            }
+                        }
+                    }
+                }
+            }
+
+            for (int y = 0; y < _chunkUpdates.GetLength(1); y++)
+            {
+                for (int x = 0; x < _chunkUpdates.GetLength(0); x++)
+                {
+                    if (_chunkUpdates[x, y] > 0)
+                        _chunkUpdates[x, y] -= time.Delta;
+                    else
+                        _chunkUpdates[x, y] = 0;
+                }
+            }
 
             base.Update(time);
         }
 
-        private Vector2 _res;
+        private Vector2 _mouseInWorld;
+        private Point _selectedTile;
 
         protected override void Draw(GameTime time)
         {
@@ -160,16 +236,31 @@ namespace TileFortress.Client
 
             _spriteBatch.Begin(
                samplerState: SamplerState.PointClamp,
-               blendState: BlendState.NonPremultiplied,
+               blendState: BlendState.AlphaBlend,
                effect: _chunkShader,
                transformMatrix: _transform);
 
-            foreach (var chunk in _chunks)
+            if (_client.IsConnected)
             {
-                DrawChunk(chunk);
+                for (int y = 0; y < DrawDistance; y++)
+                {
+                    for (int x = 0; x < DrawDistance; x++)
+                    {
+                        if (_world.TryGetChunk(new ChunkPosition(x, y), out var chunk))
+                            DrawChunk(chunk);
+
+                        float amount = 1f - _chunkUpdates[x, y] / ChunkUpdateDuration * 0.5f;
+                        if (amount > 0.01f)
+                        {
+                            var color = Color.Lerp(Color.HotPink, Color.Transparent, amount);
+                            int size = Chunk.Size * 8;
+                            _spriteBatch.DrawFilledRectangle(new RectangleF(x * size, y * size, size, size), color);
+                        }
+                    }
+                }
             }
 
-            _spriteBatch.DrawFilledRectangle(new RectangleF(_res.X - 4, _res.Y - 4, 8, 8), Color.Red);
+            _spriteBatch.DrawFilledRectangle(new RectangleF(_selectedTile.X * 8, _selectedTile.Y * 8, 8, 8), Color.Red);
 
             _spriteBatch.End();
 
@@ -195,10 +286,12 @@ namespace TileFortress.Client
 
             if (!isRandom)
             {
-                var region = GetTileRegion(firstTile);
-                int x = chunk.Position.TileX;
-                int y = chunk.Position.TileY;
-                _spriteBatch.Draw(region, new RectangleF(x * 8, y * 8, 8 * Chunk.Size, 8 * Chunk.Size), Color.White);
+                if (TryGetTileRegion(firstTile, out var region))
+                {
+                    int x = chunk.Position.TileX;
+                    int y = chunk.Position.TileY;
+                    _spriteBatch.Draw(region, new RectangleF(x * 8, y * 8, 8 * Chunk.Size, 8 * Chunk.Size), Color.White);
+                }
                 return;
             }
 
@@ -210,7 +303,8 @@ namespace TileFortress.Client
                     if (!chunk.TryGetTile(x, y, out Tile tile))
                         continue;
 
-                    var region = GetTileRegion(tile);
+                    if(!TryGetTileRegion(tile, out TextureRegion2D region))
+                        continue;
 
                     int xx = x + chunk.Position.TileX;
                     int yy = y + chunk.Position.TileY;
@@ -227,17 +321,14 @@ namespace TileFortress.Client
             }
         }
 
-        private SimplexNoise _noise = new SimplexNoise(12345);
-
-        private TextureRegion2D GetTileRegion(Tile tile)
+        private bool TryGetTileRegion(Tile tile, out TextureRegion2D region)
         {
             if (!_tileRegions.TryGetValue(tile.ID, out string regionName))
-                return null;
-
-            if (!_atlas.TryGetRegion(regionName, out var region))
-                return null;
-
-            return region;
+            {
+                region = null;
+                return false;
+            }
+            return _atlas.TryGetRegion(regionName, out region);
         }
     }
 }
