@@ -27,6 +27,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Net\EnumBufferExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\DataMessageType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\NetGamePeer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pathfinding\AStar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\SimplexNoise.cs" />
   </ItemGroup>
   <ItemGroup>
