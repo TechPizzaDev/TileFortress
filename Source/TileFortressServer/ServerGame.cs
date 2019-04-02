@@ -64,23 +64,24 @@ namespace TileFortress.Server
 
             _world.Update(time);
 
-            _lol += time.Delta;
-            while(_lol > 0.5f)
-            {
-                _lol -= 0.5f;
-                if (_lol > 1f)
-                    _lol = 1f;
-
-                int drawDist = 5;
-                int cx = _rng.Next(drawDist);
-                int cy = _rng.Next(drawDist);
-                if (_world.TryGetChunk(new ChunkPosition(cx, cy), out Chunk chunk))
-                {
-                    int index = _rng.Next(Chunk.Size * Chunk.Size);
-                    int id = _rng.Next(1, 4);
-                    chunk.SetTile(index, new Tile((ushort)id));
-                }
-            }
+            // set random tile somewhere
+            //_lol += time.Delta;
+            //while(_lol > 0.5f)
+            //{
+            //    _lol -= 0.5f;
+            //    if (_lol > 1f)
+            //        _lol = 1f;
+            //
+            //    int drawDist = 5;
+            //    int cx = _rng.Next(drawDist);
+            //    int cy = _rng.Next(drawDist);
+            //    if (_world.TryGetChunk(new ChunkPosition(cx, cy), out Chunk chunk))
+            //    {
+            //        int index = _rng.Next(Chunk.Size * Chunk.Size);
+            //        int id = _rng.Next(1, 4);
+            //        chunk.SetTile(index, new Tile((ushort)id));
+            //    }
+            //}
 
             ProcessNetworkingResponses();
         }

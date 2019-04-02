@@ -28,14 +28,16 @@ namespace TileFortress.GameWorld
             return ID;
         }
 
-        public static bool operator ==(Tile tile1, Tile tile2)
+        #region Equality Operators
+        public static bool operator ==(Tile a, Tile b)
         {
-            return tile1.Equals(tile2);
+            return a.Equals(b);
         }
 
-        public static bool operator !=(Tile tile1, Tile tile2)
+        public static bool operator !=(Tile a, Tile b)
         {
-            return !tile1.Equals(tile2);
+            return !a.Equals(b);
         }
+        #endregion
     }
 }

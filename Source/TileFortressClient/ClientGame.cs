@@ -78,7 +78,7 @@ namespace TileFortress.Client
                 _client.Connect(IPAddress.Loopback, AppConstants.NetDefaultPort);
 
                 Thread.Sleep(500);
-                AStar.CreatePath(_world, new TilePosition(4, 4));
+                PathFinder1.CreatePath(_world, new TilePosition(4, 4), new TilePosition(20, 20));
             });
         }
 
@@ -151,7 +151,7 @@ namespace TileFortress.Client
         {
             _client.Dispose();
 
-            AStar.Continue = false;
+            PathFinder1.Continue = false;
         }
 
         private Matrix _transform;
@@ -272,15 +272,28 @@ namespace TileFortress.Client
 
             _spriteBatch.DrawFilledRectangle(new RectangleF(_selectedTile.X * 8, _selectedTile.Y * 8, 8, 8), Color.Red);
 
-            if (AStar._closedList != null)
+            if (PathFinder1._closedList != null)
             {
-                lock (AStar._closedList)
+                lock (PathFinder1._closedList)
                 {
-                    foreach (var pair in AStar._closedList)
+                    foreach (var node in PathFinder1._closedList)
                     {
-                        var pos = pair.Key;
                         _spriteBatch.DrawFilledRectangle(
-                            new RectangleF(pos.X * 8, pos.Y * 8, 8, 8), new Color(Color.Yellow, 0.4f));
+                            new RectangleF(node.Position.X * 8, node.Position.Y * 8, 8, 8),
+                            new Color(Color.Yellow, 0.4f));
+                    }
+                }
+            }
+
+            if (PathFinder1._openList != null)
+            {
+                lock (PathFinder1._openList)
+                {
+                    foreach (var node in PathFinder1._openList)
+                    {
+                        _spriteBatch.DrawFilledRectangle(
+                            new RectangleF(node.Position.X * 8, node.Position.Y * 8, 8, 8),
+                            new Color(Color.Orange, 0.4f));
                     }
                 }
             }

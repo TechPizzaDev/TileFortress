@@ -56,6 +56,18 @@ namespace TileFortress.GameWorld
             return "X:" + X + " Y:" + Y;
         }
 
+        #region Equality Operators
+        public static bool operator ==(TilePosition a, TilePosition b)
+        {
+            return a.Equals(b);
+        }
+
+        public static bool operator !=(TilePosition a, TilePosition b)
+        {
+            return !a.Equals(b);
+        }
+        #endregion
+
         #region Implicit Operators
         public static implicit operator TilePosition(Point point)
         {
