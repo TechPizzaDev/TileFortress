@@ -14,48 +14,104 @@ namespace TileFortress.Pathfinding
          * F is the total cost of the node.
          */
 
-        public static Queue<TilePosition> _frontier;
-        public static Dictionary<TilePosition, bool> _visited;
+        // https://medium.com/@nicholas.w.swift/easy-a-star-pathfinding-7e6689c7f7b2
 
-        public static void BreadthFirstSearch(World world, TilePosition start)
+        public readonly struct Node
         {
-            var frontier = new Queue<TilePosition>();
-            frontier.Enqueue(start);
+            public float G { get; }
+            public float H { get; }
+            public float F => G + H;
 
-            var visited = new Dictionary<TilePosition, bool>();
+            public TilePosition Position { get; }
 
-            _frontier = frontier;
-            _visited = visited;
-
-            while (frontier.Count > 0)
+            public Node(float g, float h)
             {
-                var current = frontier.Dequeue();
+                G = g;
+                H = h;
+            }
+
+            public Node(TilePosition position)
+            {
+            }
+        }
+
+        public static Queue<Node> _openList;
+        public static HashSet<Node> _closedList;
+        public static bool Continue = true;
+
+        public static void CreatePath(World world, TilePosition start)
+        {
+            var openList = new Queue<Node>();
+            var closedList = new HashSet<Node>();
+
+            Begin:
+            openList.Enqueue(new Node(start));
+
+            // debugging/drawing junk
+            _openList = openList;
+            _closedList = closedList;
+            const int drawDist = 5;
+            float velocity = 1;
+            int tilesLeft = 1;
+
+            while (openList.Count > 0)
+            {
+                //let the currentNode equal the node with the least f value
+                //remove the currentNode from the openList
+                //add the currentNode to the closedList
+
+                var current = openList.Dequeue();
                 for (int y = -1; y < 2; y++)
                 {
                     for (int x = -1; x < 2; x++)
                     {
                         var tilePos = new TilePosition(current.X + x, current.Y + y);
                         var chunkPos = ChunkPosition.FromTile(tilePos);
-                        if (chunkPos.X < 0 || chunkPos.X > 6 ||
-                            chunkPos.Y < 0 || chunkPos.Y > 6)
+                        if (chunkPos.X < 0 || chunkPos.X >= drawDist ||
+                            chunkPos.Y < 0 || chunkPos.Y >= drawDist)
                             continue;
 
                         if (world.TryGetChunk(chunkPos, out Chunk chunk))
                         {
-                            lock (visited)
+                            bool added = false;
+
+                            lock (closedList)
                             {
-                                if (!visited.ContainsKey(tilePos) && chunk.GetTile(tilePos.LocalX, tilePos.LocalY).ID != 3)
+                                if (!closedList.ContainsKey(tilePos) &&
+                                    chunk.GetTile(tilePos.LocalX, tilePos.LocalY).ID != 0)
                                 {
-                                    frontier.Enqueue(tilePos);
-                                    visited[tilePos] = true;
+                                    openList.Enqueue(tilePos);
+                                    closedList[tilePos] = true;
+                                    added = true;
+                                }
+                            }
+
+                            if (added)
+                            {
+                                velocity += 0.00666f;
+
+                                tilesLeft--;
+                                if (tilesLeft <= 0)
+                                {
+                                    Thread.Sleep(8);
+                                    tilesLeft = (int)velocity;
                                 }
                             }
                         }
                     }
                 }
             }
-        }
 
+            Thread.Sleep(500);
+
+            lock (_closedList)
+                closedList.Clear();
+            openList.Clear();
+
+
+            if (Continue)
+                goto Begin;
+        }
     }
 }
 

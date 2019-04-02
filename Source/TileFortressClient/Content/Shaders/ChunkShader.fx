@@ -16,9 +16,9 @@ struct VertexShaderInput
 
 float4 MainTile(VertexShaderInput input) : COLOR
 {
-	float4 result = tex2D(TileTextureSampler, input.TexCoords) * input.Color;
+	float4 result = tex2D(TileTextureSampler, input.TexCoords) ;
 	
-	return result;
+	return result * input.Color;
 }
 
 technique TileDrawing

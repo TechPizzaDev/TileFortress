@@ -77,10 +77,8 @@ namespace TileFortress.Client
             {
                 _client.Connect(IPAddress.Loopback, AppConstants.NetDefaultPort);
 
-                Thread.Sleep(1000);
-                AStar.BreadthFirstSearch(_world, new TilePosition(4, 4));
-
-                Log.Debug("BreadthFirstSearch finished");
+                Thread.Sleep(500);
+                AStar.CreatePath(_world, new TilePosition(4, 4));
             });
         }
 
@@ -152,6 +150,8 @@ namespace TileFortress.Client
         protected override void UnloadContent()
         {
             _client.Dispose();
+
+            AStar.Continue = false;
         }
 
         private Matrix _transform;
@@ -246,7 +246,7 @@ namespace TileFortress.Client
 
             _spriteBatch.Begin(
                samplerState: SamplerState.PointClamp,
-               blendState: BlendState.AlphaBlend,
+               blendState: BlendState.NonPremultiplied,
                effect: _chunkShader,
                transformMatrix: _transform);
 
@@ -259,10 +259,10 @@ namespace TileFortress.Client
                         if (_world.TryGetChunk(new ChunkPosition(x, y), out var chunk))
                             DrawChunk(chunk);
 
-                        float amount = 1f - _chunkUpdates[x, y] / ChunkUpdateDuration * 0.666f;
-                        if (amount > 0.01f)
+                        float amount = _chunkUpdates[x, y] / ChunkUpdateDuration * 0.666f;
+                        if (amount > 0.05f)
                         {
-                            var color = Color.Lerp(Color.HotPink, Color.Transparent, amount);
+                            var color = new Color(Color.HotPink, amount);
                             int size = Chunk.Size * 8;
                             _spriteBatch.DrawFilledRectangle(new RectangleF(x * size, y * size, size, size), color);
                         }
@@ -272,16 +272,15 @@ namespace TileFortress.Client
 
             _spriteBatch.DrawFilledRectangle(new RectangleF(_selectedTile.X * 8, _selectedTile.Y * 8, 8, 8), Color.Red);
 
-            if (AStar._visited != null)
+            if (AStar._closedList != null)
             {
-                lock (AStar._visited)
+                lock (AStar._closedList)
                 {
-                    foreach (var pair in AStar._visited)
+                    foreach (var pair in AStar._closedList)
                     {
-                        var key = pair.Key;
+                        var pos = pair.Key;
                         _spriteBatch.DrawFilledRectangle(
-                            new RectangleF(key.X * 8, key.Y * 8, 8, 8),
-                            new Color(Color.Yellow, 63));
+                            new RectangleF(pos.X * 8, pos.Y * 8, 8, 8), new Color(Color.Yellow, 0.4f));
                     }
                 }
             }
