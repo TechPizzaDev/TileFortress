@@ -61,15 +61,15 @@ namespace TileFortress.Server.Net
 
         public void SendBuildOrders(Queue<BuildOrder> orders)
         {
-            if (Peer.Connections.Count <= 0)
+            if (Peer.ConnectionCount <= 0)
                 return;
 
             while (orders.Count > 0)
             {
-                int toSend = Math.Min(orders.Count, 255);
+                int toSend = Math.Min(orders.Count, 256);
                 var msg = CreateMessage(DataMessageType.BuildOrders);
 
-                msg.Write((byte)toSend);
+                msg.Write((byte)(toSend - 1));
                 for (int i = 0; i < toSend; i++)
                 {
                     BuildOrder order = orders.Dequeue();
@@ -77,8 +77,8 @@ namespace TileFortress.Server.Net
                     msg.Write(order.Tile.ID);
                 }
 
-                if (Peer.Connections.Count > 0)
-                    Peer.SendMessage(msg, Peer.Connections, NetDeliveryMethod.ReliableUnordered, (int)DataSequenceChannel.Tiles);
+                if (Peer.ConnectionCount > 0)
+                    Peer.SendToAll(msg, NetDeliveryMethod.ReliableUnordered, (int)DataSequenceChannel.Tiles);
             }
         }
         #endregion

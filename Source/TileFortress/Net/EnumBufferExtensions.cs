@@ -8,29 +8,28 @@ namespace TileFortress.Net
     public static class EnumBufferExtensions
     {
         public static void Write<TEnum>(this NetOutgoingMessage output, TEnum value)
-            where TEnum : Enum, IConvertible
+            where TEnum : struct, Enum, IConvertible
         {
-            int size = Marshal.SizeOf(Enum.GetUnderlyingType(typeof(TEnum)));
+            var underlyingType = Enum.GetUnderlyingType(typeof(TEnum));
+            int size = Marshal.SizeOf(underlyingType);
+            long valueBits = EnumConverter<TEnum>.Convert(value);
+
             switch (size)
             {
                 case 1:
-                    output.Write(0, 2);
-                    output.Write(value.ToByte(null));
+                    output.Write(valueBits, 8);
                     break;
 
                 case 2:
-                    output.Write(1, 2);
-                    output.Write(value.ToInt16(null));
+                    output.Write(valueBits, 16);
                     break;
 
                 case 4:
-                    output.Write(2, 2);
-                    output.Write(value.ToInt32(null));
+                    output.Write(valueBits, 32);
                     break;
 
                 case 8:
-                    output.Write(3, 2);
-                    output.Write(value.ToInt64(null));
+                    output.Write(valueBits, 64);
                     break;
 
                 default:
@@ -40,28 +39,31 @@ namespace TileFortress.Net
         }
         
         public static TEnum ReadEnum<TEnum>(this NetIncomingMessage input)
-            where TEnum : Enum, IConvertible
+            where TEnum : struct, Enum
         {
-            int type = input.ReadInt32(2);
-            switch (type)
+            var underlyingType = Enum.GetUnderlyingType(typeof(TEnum));
+            int size = Marshal.SizeOf(underlyingType);
+            switch (size)
             {
-                case 0:
+                case 1:
                     byte i8 = input.ReadByte();
                     return EnumConverter<TEnum>.Convert(i8);
 
-                case 1:
+                case 2:
                     short i16 = input.ReadInt16();
                     return EnumConverter<TEnum>.Convert(i16);
 
-                case 2:
+                case 4:
                     int i32 = input.ReadInt32();
                     return EnumConverter<TEnum>.Convert(i32);
 
-                case 3:
+                case 8:
                     long i64 = input.ReadInt64();
                     return EnumConverter<TEnum>.Convert(i64);
+
+                default:
+                    throw new InvalidOperationException();
             }
-            throw new InvalidOperationException();
         }
     }
 }

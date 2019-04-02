@@ -9,7 +9,9 @@ namespace TileFortress.Server
     {
         private class Ticker
         {
-            private ServerGame _game;
+            public delegate void UpdateDelegate(GameTime time);
+
+            private UpdateDelegate _delegate;
             private GameTime _time;
             private Stopwatch _stopwatch;
             private bool _exitNextFrame;
@@ -19,9 +21,9 @@ namespace TileFortress.Server
             private TimeSpan _accumulatedTime;
             private long _previousTicks;
 
-            public Ticker(ServerGame game)
+            public Ticker(UpdateDelegate update)
             {
-                _game = game;
+                _delegate = update;
                 _time = new GameTime();
                 _stopwatch = new Stopwatch();
             }
@@ -55,7 +57,7 @@ namespace TileFortress.Server
                 _time.TotalGameTime += _accumulatedTime;
                 _accumulatedTime = TimeSpan.Zero;
 
-                _game.Update(_time);
+                _delegate?.Invoke(_time);
                 return !_exitNextFrame;
             }
 

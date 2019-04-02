@@ -25,7 +25,7 @@ namespace TileFortress.Server
 
         public ServerGame(NetGameServer server)
         {
-            _ticker = new Ticker(this);
+            _ticker = new Ticker(Update);
             _server = server;
 
             _world = new World(World_ChunkRequest);

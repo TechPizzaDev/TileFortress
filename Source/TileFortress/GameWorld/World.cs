@@ -20,6 +20,7 @@ namespace TileFortress.GameWorld
         public SimplexNoise Noise;
         private Dictionary<ChunkPosition, Chunk> _chunks;
         private Queue<BuildOrder> _buildOrders;
+        private Stack<BuildOrder> _buildOrderBuffer;
 
         public World(ChunkRequestDelegate chunkRequest)
         {
@@ -28,6 +29,7 @@ namespace TileFortress.GameWorld
             Noise = new SimplexNoise(123456);
             _chunks = new Dictionary<ChunkPosition, Chunk>();
             _buildOrders = new Queue<BuildOrder>();
+            _buildOrderBuffer = new Stack<BuildOrder>();
         }
 
         public void Update(GameTime time)
@@ -37,8 +39,6 @@ namespace TileFortress.GameWorld
 
         private void ApplyBuildOrders()
         {
-            var tmp = new Stack<BuildOrder>();
-
             while (_buildOrders.Count > 0)
             {
                 BuildOrder order = _buildOrders.Dequeue();
@@ -49,12 +49,12 @@ namespace TileFortress.GameWorld
                     OnBuildOrder?.Invoke(this, chunk, order);
                 }
                 else
-                    tmp.Push(order);
+                    _buildOrderBuffer.Push(order);
             }
 
-            while(tmp.Count > 0)
+            while(_buildOrderBuffer.Count > 0)
             {
-                BuildOrder order = tmp.Pop();
+                BuildOrder order = _buildOrderBuffer.Pop();
                 _buildOrders.Enqueue(order);
             }
         }

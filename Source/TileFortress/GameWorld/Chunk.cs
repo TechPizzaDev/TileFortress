@@ -75,8 +75,11 @@ namespace TileFortress.GameWorld
         #region Set Tile
         public void SetTile(int index, Tile tile)
         {
-            _tiles[index] = tile;
-            OnChunkUpdate?.Invoke(this, index);
+            if (_tiles[index] != tile)
+            {
+                _tiles[index] = tile;
+                OnChunkUpdate?.Invoke(this, index);
+            }
         }
 
         public void SetTile(int x, int y, Tile tile)

@@ -42,7 +42,7 @@ namespace TileFortress.Client
         private float _zoom = 1;
 
         private float[,] _chunkUpdates;
-        private const float ChunkUpdateDuration = 0.75f;
+        private const float ChunkUpdateDuration = 0.5f;
 
         public ClientGame()
         {
@@ -249,7 +249,7 @@ namespace TileFortress.Client
                         if (_world.TryGetChunk(new ChunkPosition(x, y), out var chunk))
                             DrawChunk(chunk);
 
-                        float amount = 1f - _chunkUpdates[x, y] / ChunkUpdateDuration * 0.5f;
+                        float amount = 1f - _chunkUpdates[x, y] / ChunkUpdateDuration * 0.666f;
                         if (amount > 0.01f)
                         {
                             var color = Color.Lerp(Color.HotPink, Color.Transparent, amount);

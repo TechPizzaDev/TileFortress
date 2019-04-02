@@ -101,7 +101,7 @@ namespace TileFortress.Client.Net
 
                 case DataMessageType.BuildOrders:
                     {
-                        byte updateCount = message.ReadByte();
+                        int updateCount = message.ReadByte() + 1;
                         for (int i = 0; i < updateCount; i++)
                         {
                             TilePosition position = message.ReadPoint32();
