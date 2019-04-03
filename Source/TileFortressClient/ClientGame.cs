@@ -78,7 +78,7 @@ namespace TileFortress.Client
                 _client.Connect(IPAddress.Loopback, AppConstants.NetDefaultPort);
 
                 Thread.Sleep(500);
-                PathFinder1.CreatePath(_world, new TilePosition(4, 4), new TilePosition(20, 20));
+                AStar.BreadthFirstSearch(_world, new TilePosition(4, 4), new TilePosition(20, 20));
             });
         }
 
@@ -151,7 +151,7 @@ namespace TileFortress.Client
         {
             _client.Dispose();
 
-            PathFinder1.Continue = false;
+            AStar.Continue = false;
         }
 
         private Matrix _transform;
@@ -272,27 +272,26 @@ namespace TileFortress.Client
 
             _spriteBatch.DrawFilledRectangle(new RectangleF(_selectedTile.X * 8, _selectedTile.Y * 8, 8, 8), Color.Red);
 
-            if (PathFinder1._closedList != null)
+            if (AStar._visited != null)
             {
-                lock (PathFinder1._closedList)
+                lock (AStar._visited)
                 {
-                    foreach (var node in PathFinder1._closedList)
+                    foreach (var node in AStar._visited)
                     {
                         _spriteBatch.DrawFilledRectangle(
-                            new RectangleF(node.Position.X * 8, node.Position.Y * 8, 8, 8),
+                            new RectangleF(node.Key.X * 8, node.Key.Y * 8, 8, 8),
                             new Color(Color.Yellow, 0.4f));
                     }
                 }
             }
-
-            if (PathFinder1._openList != null)
+            if (AStar._frontier != null)
             {
-                lock (PathFinder1._openList)
+                lock (AStar._frontier)
                 {
-                    foreach (var node in PathFinder1._openList)
+                    foreach (var node in AStar._frontier)
                     {
                         _spriteBatch.DrawFilledRectangle(
-                            new RectangleF(node.Position.X * 8, node.Position.Y * 8, 8, 8),
+                            new RectangleF(node.X * 8, node.Y * 8, 8, 8),
                             new Color(Color.Orange, 0.4f));
                     }
                 }
