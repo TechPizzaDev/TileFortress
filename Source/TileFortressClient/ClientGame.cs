@@ -36,7 +36,7 @@ namespace TileFortress.Client
         private Tile _brushTile = new Tile(0);
 
         // rendering
-        public const int DrawDistance = 5;
+        public const int DrawDistance = 12;
 
         private Effect _chunkShader;
         private SimplexNoise _noise = new SimplexNoise(12345);
@@ -78,7 +78,7 @@ namespace TileFortress.Client
                 _client.Connect(IPAddress.Loopback, AppConstants.NetDefaultPort);
 
                 Thread.Sleep(500);
-                AStar.BreadthFirstSearch(_world, new TilePosition(4, 4), new TilePosition(20, 20));
+                AStar.BreadthFirstSearch(_world, new TilePosition(80, 80), new TilePosition(100, 100));
             });
         }
 
@@ -276,10 +276,10 @@ namespace TileFortress.Client
             {
                 lock (AStar._visited)
                 {
-                    foreach (var node in AStar._visited)
+                    foreach (var pos in AStar._visited)
                     {
                         _spriteBatch.DrawFilledRectangle(
-                            new RectangleF(node.Key.X * 8, node.Key.Y * 8, 8, 8),
+                            new RectangleF(pos.X * 8, pos.Y * 8, 8, 8),
                             new Color(Color.Yellow, 0.4f));
                     }
                 }
@@ -290,8 +290,9 @@ namespace TileFortress.Client
                 {
                     foreach (var node in AStar._frontier)
                     {
+                        var pos = node.Position;
                         _spriteBatch.DrawFilledRectangle(
-                            new RectangleF(node.X * 8, node.Y * 8, 8, 8),
+                            new RectangleF(pos.X * 8, pos.Y * 8, 8, 8),
                             new Color(Color.Orange, 0.4f));
                     }
                 }

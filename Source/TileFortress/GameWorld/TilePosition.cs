@@ -27,6 +27,13 @@ namespace TileFortress.GameWorld
                 index / Chunk.Size);
         }
 
+        public float DistanceSquared(TilePosition other)
+        {
+            float v1 = X - other.X;
+            float v2 = Y - other.Y;
+            return (v1 * v1) + (v2 * v2);
+        }
+
         public bool Equals(TilePosition other)
         {
             return X == other.X

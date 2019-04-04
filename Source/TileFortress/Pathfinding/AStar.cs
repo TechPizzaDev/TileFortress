@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using TileFortress.GameWorld;
 
@@ -12,22 +13,56 @@ namespace TileFortress.Pathfinding
          * F is the total cost of the node.
          */
 
-        public static Queue<TilePosition> _frontier;
-        public static Dictionary<TilePosition, bool> _visited;
+        public static List<Node> _frontier;
+        public static HashSet<TilePosition> _visited;
         public static bool Continue = true;
+
+        public class DistanceToEndComparer : IComparer<Node>
+        {
+            public TilePosition End { get; }
+
+            public DistanceToEndComparer(TilePosition end)
+            {
+                End = end;
+            }
+
+            public int Compare(Node x, Node y)
+            {
+                float xF = x.Position.DistanceSquared(End) + x.Cost;
+                float yF = y.Position.DistanceSquared(End) + y.Cost;
+                return yF.CompareTo(xF);
+            }
+        }
+
+        public readonly struct Node
+        {
+            public TilePosition Position { get; }
+            public int Cost { get; }
+            
+            public Node(TilePosition position, int cost)
+            {
+                Position = position;
+                Cost = cost;
+            }
+        }
 
         public static void BreadthFirstSearch(World world, TilePosition start, TilePosition end)
         {
-            var frontier = new Queue<TilePosition>();
-            var visited = new Dictionary<TilePosition, bool>();
+            var comparer = new DistanceToEndComparer(end);
+            var frontier = new List<Node>();
+            var visited = new HashSet<TilePosition>();
 
             // drawing/debugging junk
             _frontier = frontier;
             _visited = visited;
 
             Begin:
+
             lock (frontier)
-                frontier.Enqueue(start);
+            {
+                frontier.Add(new Node(start, 0));
+                frontier.Sort(comparer);
+            }
 
             void Sleep()
             {
@@ -42,9 +77,9 @@ namespace TileFortress.Pathfinding
 
             while (frontier.Count > 0)
             {
-                TilePosition current;
+                Node current = frontier[frontier.Count - 1];
                 lock (frontier)
-                    current = frontier.Dequeue();
+                    frontier.RemoveAt(frontier.Count - 1);
 
                 if (world.TryGetChunk(ChunkPosition.FromTile(start), out Chunk startChunk))
                 {
@@ -64,42 +99,60 @@ namespace TileFortress.Pathfinding
                     }
                 }
 
-                for (int y = -1; y < 2; y++)
+                var adjacents = new TilePosition[8]
                 {
-                    for (int x = -1; x < 2; x++)
+                    new TilePosition(-1, 1),
+                    new TilePosition(0, 1),
+                    new TilePosition(1, 1),
+
+                    new TilePosition(-1, 0),
+                    new TilePosition(1, 0),
+
+                    new TilePosition(-1, -1),
+                    new TilePosition(0, -1),
+                    new TilePosition(1, -1),
+                };
+
+                foreach (var a in adjacents)
+                {
+                    var tilePos = new TilePosition(current.Position.X + a.X, current.Position.Y + a.Y);
+                    var chunkPos = ChunkPosition.FromTile(tilePos);
+                    if (chunkPos.X < 0 || chunkPos.X >= 12 ||
+                        chunkPos.Y < 0 || chunkPos.Y >= 12)
+                        continue;
+
+                    if (world.TryGetChunk(chunkPos, out Chunk chunk))
                     {
-                        var tilePos = new TilePosition(current.X + x, current.Y + y);
-                        var chunkPos = ChunkPosition.FromTile(tilePos);
-                        if (chunkPos.X < 0 || chunkPos.X >= 5 ||
-                            chunkPos.Y < 0 || chunkPos.Y >= 5)
-                            continue;
-
-                        if (world.TryGetChunk(chunkPos, out Chunk chunk))
+                        if (!visited.Contains(tilePos) &&
+                            chunk.GetTile(tilePos.LocalX, tilePos.LocalY).ID != 0)
                         {
-                            if (!visited.ContainsKey(tilePos) &&
-                                chunk.GetTile(tilePos.LocalX, tilePos.LocalY).ID != 0)
+                            lock (frontier)
                             {
-                                lock (frontier)
-                                    frontier.Enqueue(tilePos);
-
-                                lock (visited)
-                                    visited[tilePos] = true;
-
-                                if (tilePos == end)
-                                {
-                                    if (Continue)
-                                    {
-                                        Sleep();
-                                        goto Begin;
-                                    }
-                                }
-
-                                Thread.Sleep(1);
+                                frontier.Add(new Node(tilePos, current.Cost + 1));
+                                frontier.Sort(comparer);
                             }
+
+                            lock (visited)
+                                visited.Add(tilePos);
+
+                            if (tilePos == end)
+                            {
+                                if (Continue)
+                                {
+                                    Sleep();
+                                    goto Begin;
+                                }
+                            }
+
+                            if (a.X == 0)
+                                Thread.Sleep(1);
                         }
                     }
                 }
             }
+
+            Sleep();
+            goto Begin;
         }
     }
 }
