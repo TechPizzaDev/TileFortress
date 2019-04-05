@@ -29,7 +29,15 @@
     <Compile Include="$(MSBuildThisFileDirectory)Net\EnumBufferExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\DataMessageType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\NetGamePeer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Pathfinding\AStar.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pathfinding\AStar\ComparePfNodeMatrix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pathfinding\AStar\HeuristicFormula.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pathfinding\AStar\IPathFinder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pathfinding\AStar\IPriorityQueue.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pathfinding\AStar\PathFinder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pathfinding\AStar\PathFinderNode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pathfinding\AStar\PathFinderNodeFast.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pathfinding\AStar\PathFinderOptions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pathfinding\AStar\PriorityQueue.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\SimplexNoise.cs" />
   </ItemGroup>
   <ItemGroup>

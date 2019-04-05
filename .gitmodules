@@ -5,6 +5,7 @@
 [submodule "ThirdParty/GeneralShare"]
 	path = ThirdParty/GeneralShare
 	url = https://github.com/TechnologicalPizza/GeneralShare
+	
 [submodule "ThirdParty/AtlasShare"]
 	path = ThirdParty/AtlasShare
 	url = https://github.com/TechnologicalPizza/AtlasShare

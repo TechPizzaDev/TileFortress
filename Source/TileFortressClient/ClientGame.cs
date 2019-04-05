@@ -1,4 +1,5 @@
-﻿using GeneralShare;
+﻿using AStar;
+using GeneralShare;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -13,7 +14,6 @@ using System.Threading;
 using TileFortress.Client.Net;
 using TileFortress.GameWorld;
 using TileFortress.Net;
-using TileFortress.Pathfinding;
 using TileFortress.Utils;
 
 namespace TileFortress.Client
@@ -45,6 +45,8 @@ namespace TileFortress.Client
 
         private float[,] _chunkUpdates;
         private const float ChunkUpdateDuration = 0.5f;
+
+        private List<PathFinderNode> _path;
 
         public ClientGame()
         {
@@ -78,7 +80,27 @@ namespace TileFortress.Client
                 _client.Connect(IPAddress.Loopback, AppConstants.NetDefaultPort);
 
                 Thread.Sleep(500);
-                AStar.BreadthFirstSearch(_world, new TilePosition(80, 80), new TilePosition(100, 100));
+                var grid = new byte[DrawDistance * Chunk.Size, DrawDistance * Chunk.Size];
+
+                while (true)
+                {
+                    for (int i = 0; i < grid.GetLength(0); i++)
+                    {
+                        for (int j = 0; j < grid.GetLength(1); j++)
+                        {
+                            var tp = new TilePosition(i, j);
+                            if (_world.TryGetChunk(ChunkPosition.FromTile(tp), out var chunk))
+                            {
+                                grid[i, j] = (byte)Math.Min((ushort)1, chunk.GetTile(tp.LocalX, tp.LocalY).ID);
+                            }
+                        }
+                    }
+
+                    var finder = new PathFinder(grid);
+                    _path = finder.FindPath(new TilePosition(80, 80), new TilePosition(100, 100));
+
+                    Thread.Sleep(250);
+                }
             });
         }
 
@@ -150,8 +172,6 @@ namespace TileFortress.Client
         protected override void UnloadContent()
         {
             _client.Dispose();
-
-            AStar.Continue = false;
         }
 
         private Matrix _transform;
@@ -197,10 +217,10 @@ namespace TileFortress.Client
             _selectedTile = new Point((int)tmp.X, (int)tmp.Y);
             
             _zoom = MathHelper.Clamp(_zoom + Input.MouseScroll / 1000, 0.5f, 4f);
-            if (Input.IsMouseDown(MouseButton.Left))
+            if (Input.IsMouseDown(MouseButton.Right))
                 _offset += Input.MouseVelocity.ToVector2() / _zoom;
 
-            if (Input.IsMouseDown(MouseButton.Right) && _client.IsConnected)
+            if (Input.IsMouseDown(MouseButton.Left) && _client.IsConnected)
             {
                 const int brushSize = 3;
                 for (int y = 0; y < brushSize * 2; y++)
@@ -272,29 +292,13 @@ namespace TileFortress.Client
 
             _spriteBatch.DrawFilledRectangle(new RectangleF(_selectedTile.X * 8, _selectedTile.Y * 8, 8, 8), Color.Red);
 
-            if (AStar._visited != null)
+            if (_path != null)
             {
-                lock (AStar._visited)
+                foreach (var pos in _path)
                 {
-                    foreach (var pos in AStar._visited)
-                    {
-                        _spriteBatch.DrawFilledRectangle(
-                            new RectangleF(pos.X * 8, pos.Y * 8, 8, 8),
-                            new Color(Color.Yellow, 0.4f));
-                    }
-                }
-            }
-            if (AStar._frontier != null)
-            {
-                lock (AStar._frontier)
-                {
-                    foreach (var node in AStar._frontier)
-                    {
-                        var pos = node.Position;
-                        _spriteBatch.DrawFilledRectangle(
-                            new RectangleF(pos.X * 8, pos.Y * 8, 8, 8),
-                            new Color(Color.Orange, 0.4f));
-                    }
+                    _spriteBatch.DrawFilledRectangle(
+                        new RectangleF(pos.X * 8, pos.Y * 8, 8, 8),
+                        new Color(Color.Yellow, 0.4f));
                 }
             }
 
